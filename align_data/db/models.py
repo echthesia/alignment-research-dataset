@@ -1,11 +1,11 @@
 import enum
-import re
-import json
-import re
-import logging
-import pytz
 import hashlib
+import json
+import logging
+import re
 from datetime import datetime
+
+import pytz
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
@@ -50,6 +50,22 @@ class Summary(Base):
     article_id: Mapped[str] = mapped_column(ForeignKey("articles.id"))
 
     article: Mapped["Article"] = relationship(back_populates="summaries")
+
+
+class ArticleComment(Base):
+    __tablename__ = "article_comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    comment_id: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
+    article_id: Mapped[int] = mapped_column(ForeignKey("articles.id"), nullable=False)
+    source: Mapped[Optional[str]] = mapped_column(String(256))
+    text: Mapped[str] = mapped_column(LONGTEXT, nullable=False)
+    author: Mapped[Optional[str]] = mapped_column(String(256))
+    posted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    parent_comment_id: Mapped[Optional[str]] = mapped_column(String(256))
+    url: Mapped[Optional[str]] = mapped_column(String(1028))
+
+    article: Mapped["Article"] = relationship(back_populates="article_comments")
 
 
 class PineconeStatus(enum.Enum):
@@ -107,6 +123,10 @@ class Article(Base):
     )
 
     summaries: Mapped[List["Summary"]] = relationship(
+        back_populates="article", cascade="all, delete-orphan"
+    )
+
+    article_comments: Mapped[List["ArticleComment"]] = relationship(
         back_populates="article", cascade="all, delete-orphan"
     )
 
